@@ -43,6 +43,7 @@ dependencies:
   google_sign_in: ^5.4.4
   firebase_ui_oauth_google: ^1.0.20
   flutter_dotenv: ^5.0.2
+  random_color: ^1.0.6-nullsafety
 
 dev_dependencies:
   flutter_test:
