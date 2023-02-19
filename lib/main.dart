@@ -14,6 +14,7 @@ import 'package:random_color/random_color.dart';
 import './models/todo.dart';
 import 'todo_card.dart';
 
+// TODO: make logout alert more informatic
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemTheme.accentColor.load();
@@ -54,9 +55,12 @@ class MyApp extends StatelessWidget {
                     Provider.of<CurrentUser>(context, listen: false)
                         .set_user(FirebaseAuth.instance.currentUser);
                     Navigator.pop(context);
+                  }),
+                  AuthStateChangeAction<UserCreated>((context, state) {
+                    Navigator.popAndPushNamed(context, '/sign-in');
                   })
                 ],
-              )
+              ),
         },
         title: 'Flutter Demo',
         theme: ThemeData.light(),
@@ -93,7 +97,6 @@ class MyHomePage extends StatelessWidget {
 
     // If the user is signed in but account has not been made by OAuth, display an icon
     if (userPhotoUrl == "") {
-      // TODO: user persistence when signed in using non OAuth
       final userDisplayName = currentUser.displayName ?? "";
 
       if (userDisplayName == "") {
