@@ -9,11 +9,14 @@ class Todo {
 
 class Todos with ChangeNotifier {
   final List<Todo> _todos = [
-    Todo(title: 'Yoga with Sofie', done: true),
     Todo(title: 'Water Plants'),
     Todo(title: 'Ikea Delivery'),
     Todo(title: 'Duct Tape'),
     Todo(title: 'Decide where to go for the family summer camp'),
+  ];
+
+  final List<Todo> _completedTodos = [
+    Todo(title: 'Yoga with Sofie', done: true),
   ];
 
   void addTodo(Todo todo) {
@@ -21,7 +24,26 @@ class Todos with ChangeNotifier {
     notifyListeners();
   }
 
+  void removeTodo(Todo todo) {
+    _todos.remove(todo);
+    notifyListeners();
+  }
+
+  void addCompletedTodo(Todo todo) {
+    _completedTodos.insert(0, todo);
+    notifyListeners();
+  }
+
+  void removeCompletedTodo(Todo todo) {
+    _completedTodos.remove(todo);
+    notifyListeners();
+  }
+
   List<Todo> get todos {
     return _todos;
+  }
+
+  List<Todo> get completedTodos {
+    return _completedTodos;
   }
 }

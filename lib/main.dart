@@ -184,12 +184,11 @@ class MyHomePage extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    for (var idx = 0;
-                        idx < Provider.of<Todos>(context).todos.length;
-                        idx++)
+                    for (var todo in Provider.of<Todos>(context).todos)
                       TodoCard(
-                        todo: Provider.of<Todos>(context).todos[idx],
+                        todo: todo,
                       ),
+                    const CompletedTodos(),
                   ],
                 ),
               ),
@@ -225,6 +224,38 @@ class MyHomePage extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class CompletedTodos extends StatelessWidget {
+  const CompletedTodos({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ExpansionPanelList.radio(
+      animationDuration: const Duration(milliseconds: 100),
+      children: [
+        ExpansionPanelRadio(
+            canTapOnHeader: true,
+            value: 1,
+            headerBuilder: (_, isExpanded) => ListTile(
+                    title: Text(
+                  'Completed',
+                  style: Theme.of(context).textTheme.titleLarge,
+                )),
+            body: Column(
+              children: [
+                for (var completedTodo
+                    in Provider.of<Todos>(context).completedTodos)
+                  TodoCard(
+                    todo: completedTodo,
+                  )
+              ],
+            ))
+      ],
     );
   }
 }
