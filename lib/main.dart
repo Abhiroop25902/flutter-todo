@@ -17,7 +17,6 @@ import 'todo_card.dart';
 // TODO: make logout alert more informatic
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SystemTheme.accentColor.load();
 
   await dotenv.load(fileName: ".env");
 
@@ -45,37 +44,30 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => CurrentUser())
       ],
       builder: (context, child) => MaterialApp(
-        initialRoute: '/todo',
-        routes: {
-          '/todo': (context) =>
-              const MyHomePage(title: 'Flutter Demo Home Page'),
-          '/sign-in': (context) => SignInScreen(
-                actions: [
-                  AuthStateChangeAction<SignedIn>((context, state) {
-                    Provider.of<CurrentUser>(context, listen: false)
-                        .set_user(FirebaseAuth.instance.currentUser);
-                    Navigator.pop(context);
-                  }),
-                  AuthStateChangeAction<UserCreated>((context, state) {
-                    Navigator.popAndPushNamed(context, '/sign-in');
-                  })
-                ],
-              ),
-        },
-        title: 'Flutter Demo',
-        theme: ThemeData.light(),
-        darkTheme: ThemeData.dark().copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-                primary: SystemTheme.accentColor.accent,
-                secondary: SystemTheme.fallbackColor)),
-      ),
+          initialRoute: '/todo',
+          routes: {
+            '/todo': (context) => const MyHomePage(),
+            '/sign-in': (context) => SignInScreen(
+                  actions: [
+                    AuthStateChangeAction<SignedIn>((context, state) {
+                      Provider.of<CurrentUser>(context, listen: false)
+                          .set_user(FirebaseAuth.instance.currentUser);
+                      Navigator.pop(context);
+                    }),
+                    AuthStateChangeAction<UserCreated>((context, state) {
+                      Navigator.popAndPushNamed(context, '/sign-in');
+                    })
+                  ],
+                ),
+          },
+          theme: ThemeData.light(useMaterial3: true),
+          darkTheme: ThemeData.dark(useMaterial3: true)),
     );
   }
 }
 
 class MyHomePage extends StatelessWidget {
-  final String title;
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage({super.key});
 
   Widget _getUserIcon(BuildContext context) {
     final currentUser = Provider.of<CurrentUser>(context).currentUser;
@@ -128,6 +120,14 @@ class MyHomePage extends StatelessWidget {
     );
   }
 
+  String? _getUserName(BuildContext context) {
+    return Provider.of<CurrentUser>(context).currentUser?.displayName;
+  }
+
+  String? _getUserEmail(BuildContext context) {
+    return Provider.of<CurrentUser>(context).currentUser?.email;
+  }
+
   void showLogOutDialog(BuildContext context) {
     showDialog(
         context: context,
@@ -148,26 +148,51 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: Drawer(
+          child: ListView(
+        children: [
+          ListTile(
+            leading: _getUserIcon(context),
+            title: Text(
+              _getUserName(context) ??
+                  _getUserEmail(context) ??
+                  "Username or Email Not Found",
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          ListTile(
+            minLeadingWidth: 0,
+            style: ListTileStyle.drawer,
+            leading: Icon(
+              Icons.check_circle_outline_rounded,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            title: Text('Texts'),
+          )
+        ],
+      )),
       appBar: AppBar(
-        actions: [_getUserIcon(context)],
+        title: Text(
+          'Tasks',
+          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        ),
       ),
       body: SafeArea(
         child: Column(
           children: [
-            ListTile(
-              title: Text(
-                'Tasks',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.bold),
-              ),
-            ),
             Expanded(
-              child: ListView.builder(
-                  itemCount: Provider.of<Todos>(context).todos.length,
-                  itemBuilder: (context, idx) => TodoCard(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (var idx = 0;
+                        idx < Provider.of<Todos>(context).todos.length;
+                        idx++)
+                      TodoCard(
                         todo: Provider.of<Todos>(context).todos[idx],
-                      )),
+                      ),
+                  ],
+                ),
+              ),
             ),
             Card(
               margin: const EdgeInsets.all(2),
