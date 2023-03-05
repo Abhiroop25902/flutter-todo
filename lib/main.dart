@@ -1,17 +1,17 @@
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:system_theme/system_theme.dart';
 import 'package:todo_firebase/models/current_user.dart';
 import 'package:todo_firebase/new_todo.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'completed_todos.dart';
 import 'firebase_options.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:random_color/random_color.dart';
 
-import './models/todo.dart';
+import 'models/todo_page.dart';
 import 'todo_card.dart';
 
 // TODO: make logout alert more informatic
@@ -40,18 +40,20 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => Todos()),
+        ChangeNotifierProvider(create: (context) => TodoPage.test()),
         ChangeNotifierProvider(create: (context) => CurrentUser())
       ],
       builder: (context, child) => MaterialApp(
           initialRoute: '/todo',
           routes: {
-            '/todo': (context) => const MyHomePage(),
+            '/todo': (context) => TodoPageUI(
+                  todoPage: Provider.of<TodoPage>(context),
+                ),
             '/sign-in': (context) => SignInScreen(
                   actions: [
                     AuthStateChangeAction<SignedIn>((context, state) {
                       Provider.of<CurrentUser>(context, listen: false)
-                          .set_user(FirebaseAuth.instance.currentUser);
+                          .setUser(FirebaseAuth.instance.currentUser);
                       Navigator.pop(context);
                     }),
                     AuthStateChangeAction<UserCreated>((context, state) {
@@ -66,8 +68,10 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key});
+class TodoPageUI extends StatelessWidget {
+  final TodoPage todoPage;
+
+  const TodoPageUI({super.key, required this.todoPage});
 
   Widget _getUserIcon(BuildContext context) {
     final currentUser = Provider.of<CurrentUser>(context).currentUser;
@@ -132,7 +136,7 @@ class MyHomePage extends StatelessWidget {
     showDialog(
         context: context,
         builder: (context) => AlertDialog(
-              title: Text('hello'),
+              title: const Text('hello'),
               actions: [
                 TextButton(
                     onPressed: () {
@@ -140,7 +144,7 @@ class MyHomePage extends StatelessWidget {
                           .signOut();
                       Navigator.pop(context);
                     },
-                    child: Text('Log Out'))
+                    child: const Text('Log Out'))
               ],
             ));
   }
@@ -148,32 +152,10 @@ class MyHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      drawer: Drawer(
-          child: ListView(
-        children: [
-          ListTile(
-            leading: _getUserIcon(context),
-            title: Text(
-              _getUserName(context) ??
-                  _getUserEmail(context) ??
-                  "Username or Email Not Found",
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
-          ListTile(
-            minLeadingWidth: 0,
-            style: ListTileStyle.drawer,
-            leading: Icon(
-              Icons.check_circle_outline_rounded,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            title: Text('Texts'),
-          )
-        ],
-      )),
+      drawer: _getAppDrawer(context),
       appBar: AppBar(
         title: Text(
-          'Tasks',
+          Provider.of<TodoPage>(context).pageName,
           style: TextStyle(color: Theme.of(context).colorScheme.primary),
         ),
       ),
@@ -184,11 +166,14 @@ class MyHomePage extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    for (var todo in Provider.of<Todos>(context).todos)
+                    for (var todo in todoPage.todos)
                       TodoCard(
                         todo: todo,
                       ),
-                    const CompletedTodos(),
+                    if (todoPage.completedTodos.isNotEmpty)
+                      CompletedTodos(
+                        todoPage: todoPage,
+                      ),
                   ],
                 ),
               ),
@@ -226,36 +211,68 @@ class MyHomePage extends StatelessWidget {
       ),
     );
   }
-}
 
-class CompletedTodos extends StatelessWidget {
-  const CompletedTodos({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpansionPanelList.radio(
-      animationDuration: const Duration(milliseconds: 100),
-      children: [
-        ExpansionPanelRadio(
-            canTapOnHeader: true,
-            value: 1,
-            headerBuilder: (_, isExpanded) => ListTile(
-                    title: Text(
-                  'Completed',
-                  style: Theme.of(context).textTheme.titleLarge,
-                )),
-            body: Column(
+  Drawer _getAppDrawer(BuildContext context) {
+    return Drawer(
+        child: SafeArea(
+      child: Column(
+        children: [
+          Card(
+            child: ListTile(
+              leading: _getUserIcon(context),
+              title: Text(
+                _getUserName(context) ??
+                    _getUserEmail(context) ??
+                    "Username or Email Not Found",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
               children: [
-                for (var completedTodo
-                    in Provider.of<Todos>(context).completedTodos)
-                  TodoCard(
-                    todo: completedTodo,
-                  )
+                ListTile(
+                  minLeadingWidth: 0,
+                  style: ListTileStyle.drawer,
+                  leading: Icon(
+                    Icons.check_circle_outline_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  title: Text(Provider.of<TodoPage>(context).pageName),
+                )
               ],
-            ))
-      ],
-    );
+            ),
+          ),
+          Card(
+            margin: const EdgeInsets.all(2),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+              leading: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(
+                  Icons.add,
+                  // size: 40,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              horizontalTitleGap: 0,
+              title: Text(
+                'Add a page',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
+              // onTap: () => showModalBottomSheet(
+              //     context: context,
+              //     builder: (_) => Padding(
+              //           padding: EdgeInsets.only(
+              //               bottom: MediaQuery.of(context).viewInsets.bottom),
+              //           child: const NewTodo(),
+              //         )),
+            ),
+          )
+        ],
+      ),
+    ));
   }
 }

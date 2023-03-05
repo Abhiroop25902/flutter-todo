@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'models/todo.dart';
+import 'models/todo_page.dart';
 
 class TodoCard extends StatefulWidget {
   final Todo todo;
@@ -32,14 +33,14 @@ class _TodoCardState extends State<TodoCard> {
                 widget.todo.done = value!;
 
                 if (value) {
-                  Provider.of<Todos>(context, listen: false)
+                  Provider.of<TodoPage>(context, listen: false)
                       .removeTodo(widget.todo);
-                  Provider.of<Todos>(context, listen: false)
+                  Provider.of<TodoPage>(context, listen: false)
                       .addCompletedTodo(widget.todo);
                 } else {
-                  Provider.of<Todos>(context, listen: false)
+                  Provider.of<TodoPage>(context, listen: false)
                       .removeCompletedTodo(widget.todo);
-                  Provider.of<Todos>(context, listen: false)
+                  Provider.of<TodoPage>(context, listen: false)
                       .addTodo(widget.todo);
                 }
               },

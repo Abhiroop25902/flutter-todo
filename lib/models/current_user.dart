@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 class CurrentUser with ChangeNotifier {
   User? _currentUser = FirebaseAuth.instance.currentUser;
 
-  void set_user(User? User) {
-    _currentUser = User;
+  void setUser(User? user) {
+    _currentUser = user;
 
     if (_currentUser != null) {
       notifyListeners();
