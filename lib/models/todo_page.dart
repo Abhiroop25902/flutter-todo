@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
-
 import 'todo.dart';
 
-class TodoPage with ChangeNotifier {
+class TodoPage  {
   factory TodoPage.test() {
     return TodoPage(todos: [
       Todo(title: 'Water Plants'),
@@ -30,22 +28,18 @@ class TodoPage with ChangeNotifier {
 
   void addTodo(Todo todo) {
     _todos.insert(0, todo);
-    notifyListeners();
   }
 
   void removeTodo(Todo todo) {
     _todos.remove(todo);
-    notifyListeners();
   }
 
   void addCompletedTodo(Todo todo) {
     _completedTodos.insert(0, todo);
-    notifyListeners();
   }
 
   void removeCompletedTodo(Todo todo) {
     _completedTodos.remove(todo);
-    notifyListeners();
   }
 
   List<Todo> get todos {

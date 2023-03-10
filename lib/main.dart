@@ -2,19 +2,15 @@ import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:todo_firebase/models/current_user.dart';
-import 'package:todo_firebase/new_todo.dart';
+import 'package:todo_firebase/models/todo_page_list.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'completed_todos.dart';
-import 'firebase_options.dart';
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:random_color/random_color.dart';
 
-import 'models/todo_page.dart';
-import 'todo_card.dart';
+import 'firebase_options.dart';
+import 'views/todo_page_ui.dart';
 
-// TODO: make logout alert more informatic
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -40,14 +36,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => TodoPage.test()),
+        ChangeNotifierProvider(create: (context) => TodoPageList.test()),
         ChangeNotifierProvider(create: (context) => CurrentUser())
       ],
       builder: (context, child) => MaterialApp(
           initialRoute: '/todo',
           routes: {
             '/todo': (context) => TodoPageUI(
-                  todoPage: Provider.of<TodoPage>(context),
+                  todoPage: Provider.of<TodoPageList>(context).currentPage,
                 ),
             '/sign-in': (context) => SignInScreen(
                   actions: [
@@ -68,211 +64,3 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class TodoPageUI extends StatelessWidget {
-  final TodoPage todoPage;
-
-  const TodoPageUI({super.key, required this.todoPage});
-
-  Widget _getUserIcon(BuildContext context) {
-    final currentUser = Provider.of<CurrentUser>(context).currentUser;
-
-    // If user is signed out,show icon to sign in
-    if (currentUser == null) {
-      return CircleAvatar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        child: IconButton(
-          onPressed: () {
-            Navigator.pushNamed(context, '/sign-in');
-          },
-          icon: const Icon(Icons.person_add),
-        ),
-      );
-    }
-
-    String userPhotoUrl = currentUser.photoURL ?? "";
-
-    // If the user is signed in but account has not been made by OAuth, display an icon
-    if (userPhotoUrl == "") {
-      final userDisplayName = currentUser.displayName ?? "";
-
-      if (userDisplayName == "") {
-        return CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          child: IconButton(
-            onPressed: () => showLogOutDialog(context),
-            icon: const Icon(Icons.person),
-          ),
-        );
-      }
-
-      return CircleAvatar(
-        backgroundColor: RandomColor().randomColor(
-            colorBrightness:
-                Theme.of(context).brightness == ThemeData().brightness
-                    ? ColorBrightness.light
-                    : ColorBrightness.dark),
-        child: Text(userDisplayName.split(' ').map((s) => s[0]).join(""),
-            style: Theme.of(context).textTheme.bodyLarge),
-      );
-    }
-
-    return CircleAvatar(
-      backgroundImage: NetworkImage(userPhotoUrl),
-      child: GestureDetector(
-        onTap: () => showLogOutDialog(context),
-      ),
-    );
-  }
-
-  String? _getUserName(BuildContext context) {
-    return Provider.of<CurrentUser>(context).currentUser?.displayName;
-  }
-
-  String? _getUserEmail(BuildContext context) {
-    return Provider.of<CurrentUser>(context).currentUser?.email;
-  }
-
-  void showLogOutDialog(BuildContext context) {
-    showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-              title: const Text('hello'),
-              actions: [
-                TextButton(
-                    onPressed: () {
-                      Provider.of<CurrentUser>(context, listen: false)
-                          .signOut();
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Log Out'))
-              ],
-            ));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      drawer: _getAppDrawer(context),
-      appBar: AppBar(
-        title: Text(
-          Provider.of<TodoPage>(context).pageName,
-          style: TextStyle(color: Theme.of(context).colorScheme.primary),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    for (var todo in todoPage.todos)
-                      TodoCard(
-                        todo: todo,
-                      ),
-                    if (todoPage.completedTodos.isNotEmpty)
-                      CompletedTodos(
-                        todoPage: todoPage,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.all(2),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                leading: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Icon(
-                    Icons.add,
-                    // size: 40,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                horizontalTitleGap: 0,
-                title: Text(
-                  'Add a task',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                ),
-                onTap: () => showModalBottomSheet(
-                    context: context,
-                    builder: (_) => Padding(
-                          padding: EdgeInsets.only(
-                              bottom: MediaQuery.of(context).viewInsets.bottom),
-                          child: const NewTodo(),
-                        )),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  Drawer _getAppDrawer(BuildContext context) {
-    return Drawer(
-        child: SafeArea(
-      child: Column(
-        children: [
-          Card(
-            child: ListTile(
-              leading: _getUserIcon(context),
-              title: Text(
-                _getUserName(context) ??
-                    _getUserEmail(context) ??
-                    "Username or Email Not Found",
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              children: [
-                ListTile(
-                  minLeadingWidth: 0,
-                  style: ListTileStyle.drawer,
-                  leading: Icon(
-                    Icons.check_circle_outline_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: Text(Provider.of<TodoPage>(context).pageName),
-                )
-              ],
-            ),
-          ),
-          Card(
-            margin: const EdgeInsets.all(2),
-            child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              leading: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Icon(
-                  Icons.add,
-                  // size: 40,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              horizontalTitleGap: 0,
-              title: Text(
-                'Add a page',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-              ),
-              // onTap: () => showModalBottomSheet(
-              //     context: context,
-              //     builder: (_) => Padding(
-              //           padding: EdgeInsets.only(
-              //               bottom: MediaQuery.of(context).viewInsets.bottom),
-              //           child: const NewTodo(),
-              //         )),
-            ),
-          )
-        ],
-      ),
-    ));
-  }
-}

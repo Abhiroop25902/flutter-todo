@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:todo_firebase/models/todo.dart';
 
-import 'models/todo_page.dart';
+import '../../models/todo.dart';
+import '../../models/todo_page_list.dart';
+
+
+
+
 
 class NewTodo extends StatefulWidget {
   const NewTodo({super.key});
@@ -36,7 +40,7 @@ class _NewTodoState extends State<NewTodo> {
             focusNode: _todoInputFocusNode,
             decoration: const InputDecoration(border: InputBorder.none),
             onSubmitted: (value) {
-              Provider.of<TodoPage>(context, listen: false)
+              Provider.of<TodoPageList>(context, listen: false).currentPage
                   .addTodo(Todo(title: value));
               Navigator.pop(context);
             },
